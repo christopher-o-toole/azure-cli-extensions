@@ -5,7 +5,7 @@
 
 from azext_ai_did_you_mean_this.arguments import Arguments
 from azext_ai_did_you_mean_this._types import ArgumentsType
-
+from colorama import Style, Fore, Back
 
 class CliCommand():
     parameters = Arguments('parameters', delim=',')
@@ -34,11 +34,12 @@ class CliCommand():
                 if not buffer:
                     buffer.append('')
                 if arg:
+                    param = f'{Fore.BLUE}{param}{Style.RESET_ALL}'
                     buffer.append(' '.join((param, arg)))
                 else:
-                    buffer.append(param)
+                    buffer.append(f'{Fore.BLUE}{param}{Style.RESET_ALL}')
 
-        return f"{self.command}{' '.join(buffer)}"
+        return f"{Style.BRIGHT}{Fore.BLUE}az {self.command}{Style.RESET_ALL}{' '.join(buffer)}"
 
     def __eq__(self, value):
         return (self.command == value.command and

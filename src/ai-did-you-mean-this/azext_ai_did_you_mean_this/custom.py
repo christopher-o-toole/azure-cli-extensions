@@ -40,6 +40,7 @@ from azext_ai_did_you_mean_this._telemetry import (
 from azext_ai_did_you_mean_this._timer import Timer
 from azext_ai_did_you_mean_this._util import safe_repr
 from azext_ai_did_you_mean_this.version import VERSION
+from colorama import Style, Fore, Back
 
 logger = get_logger(__name__)
 
@@ -100,9 +101,8 @@ def recommend_recovery_options(version, command, parameters, extension):
                 msg = UNABLE_TO_HELP_FMT_STR.format(command=command)
                 append(msg)
 
-            def show_recommendation_header(command):
-                msg = RECOMMENDATION_HEADER_FMT_STR.format(command=command)
-                append(style_message(msg))
+            def show_recommendation_header():
+                append(f'\n{Style.BRIGHT}{Fore.WHITE}TRY{Style.RESET_ALL}')
 
             if extension:
                 reason = NoRecommendationReason.CommandFromExtension.value
@@ -131,10 +131,32 @@ def recommend_recovery_options(version, command, parameters, extension):
                 recommendations = get_recommendations_from_http_response(response)
 
                 if recommendations:
-                    show_recommendation_header(command)
+                    show_recommendation_header()
 
                     for recommendation in recommendations:
-                        append(f"\t{recommendation}")
+                        append(f"{recommendation}")
+                    
+                    with open(r'C:\Users\chotool.REDMOND\Documents\Azure\azure-cli-extensions\src\ai-did-you-mean-this\azext_ai_did_you_mean_this\toc.json') as toc_file:
+                        toc = json.load(toc_file)
+
+                    def get_doc_href_lookup_tbl(root, tbl=None):
+                        tbl = tbl or {}
+                        children = root.get('items') or root.get('children') or []
+
+                        for node in children:
+                            if (display_name := node.get('displayName')) and display_name.startswith('az ') and (href := node.get('href')):
+                                if display_name not in tbl or '/ext/' in tbl[display_name]:
+                                    tbl[display_name] = href
+                            if hasattr(node, 'items') or hasattr(node, 'children'):
+                                tbl.update(get_doc_href_lookup_tbl(node, tbl))
+
+                        return tbl
+
+                    doc_href_lookup_tbl = get_doc_href_lookup_tbl(toc)
+                    if (href := doc_href_lookup_tbl.get(f'az {command}')):
+                        append(f'\033[4m{Style.BRIGHT}{Fore.CYAN}https://docs.microsoft.com/en-us/cli/azure{href[2:]}{Style.RESET_ALL}')
+                        append(f"{Style.BRIGHT}{Fore.LIGHTBLACK_EX}Read more about az {command}{Style.RESET_ALL}\n")
+
                 # only prompt user to use "az find" for valid CLI commands
                 # note: pylint has trouble resolving statically initialized variables, which is why
                 # we need to disable the unsupported membership test rule
