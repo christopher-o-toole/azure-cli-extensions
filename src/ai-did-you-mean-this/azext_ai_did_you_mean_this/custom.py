@@ -231,7 +231,7 @@ def call_aladdin_service(command, parameters, version):
         "parameters": parameters
     }
 
-    api_url = 'https://app.aladdin.microsoft.com/api/v1.0/suggestions'
+    api_url = 'https://aladdindevwestus-app.azurewebsites.net/api/v1.0/suggestions'
     headers = {'Content-Type': 'application/json'}
 
     try:
