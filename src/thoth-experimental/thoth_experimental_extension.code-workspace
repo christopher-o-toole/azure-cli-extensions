@@ -1,0 +1,32 @@
+{
+    "folders": [
+      {
+        "path": "."
+      }
+    ],
+    "settings": {
+      "python.pythonPath": "..\\..\\..\\env-azure\\Scripts\\python.exe",
+      "python.linting.enabled": true,
+      "python.linting.flake8Enabled": true,
+      "python.linting.flake8Args": [
+          "--config",
+          "..\\..\\.flake8"
+      ],
+      "python.linting.pylintEnabled": true,
+      "python.linting.pylintArgs": [
+        "--rcfile",
+        "..\\..\\pylintrc"
+      ],
+      "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./azext_thoth_experimental/tests",
+        "-p",
+        "test_*.py"
+      ],
+      "python.testing.pytestEnabled": false,
+      "python.testing.nosetestsEnabled": false,
+      "python.testing.unittestEnabled": true,
+      "files.autoSave": "onFocusChange"
+    }
+  }
