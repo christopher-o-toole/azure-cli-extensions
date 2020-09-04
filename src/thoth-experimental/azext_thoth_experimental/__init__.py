@@ -52,8 +52,7 @@ class ThothExperimentalCommandsLoader(AzCommandsLoader):
         return self.command_table
 
     def load_arguments(self, command):
-        from azext_thoth_experimental._params import load_arguments
-        load_arguments(self, command)
+        pass
 
 
 COMMAND_LOADER_CLS = ThothExperimentalCommandsLoader
