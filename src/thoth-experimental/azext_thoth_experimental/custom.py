@@ -29,11 +29,11 @@ def main(*_, **__):
         return
 
     command_parser = CommandParser(ParseArgsEventHandler.PRE_PARSE_ARGS)
-    input_command = command_parser.command.command
+    input_command = command_parser.command
     
     if 'storage create' in input_command:
         print(f'\n{Style.BRIGHT}{Fore.WHITE}TRY{Style.RESET_ALL}')
-        print(str(CliCommand(Command('storage account create'), [Argument('--name', 'samplestorage2'), Argument('--location', 'westus2')])))
+        print(str(CliCommand('storage account create', [Argument('--name', 'samplestorage2'), Argument('--location', 'westus2')])))
         print(f'{Style.BRIGHT}{Fore.LIGHTBLACK_EX}Create a storage account.{Style.RESET_ALL}')
         print(f'\n\033[4m{Style.BRIGHT}{Fore.CYAN}https://docs.microsoft.com/en-us/cli/azure/storage/account?view=azure-cli-latest#az-storage-account-create{Style.RESET_ALL}')
         print(f"{Style.BRIGHT}{Fore.LIGHTBLACK_EX}Read more about 'az storage account'{Style.RESET_ALL}\n")
