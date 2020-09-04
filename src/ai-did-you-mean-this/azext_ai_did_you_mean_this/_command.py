@@ -94,7 +94,7 @@ class Command():
         return parameter_table, command
 
     @staticmethod
-    def parse(command_table: dict, command: str, recurse: bool = True) -> Tuple['Command', str]:
+    def parse(command_table: dict, command: str, recurse: bool = False) -> Tuple['Command', str]:
         instance: 'Command' = None
         (parameter_table, command) = Command.get_parameter_table(
             command_table,

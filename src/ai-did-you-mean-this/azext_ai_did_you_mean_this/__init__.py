@@ -34,7 +34,6 @@ class AiDidYouMeanThisCommandsLoader(AzCommandsLoader):
                          custom_command_type=ai_did_you_mean_this_custom)
         self.cli_ctx.register_event(EVENT_INVOKER_CMD_TBL_LOADED, on_command_table_loaded)
         from knack.events import EVENT_CLI_POST_EXECUTE
-        self.cli_ctx.register_event(EVENT_CLI_POST_EXECUTE, lambda *args: print('lol gotem'))
         inject_functions_into_core()
         # per https://github.com/Azure/azure-cli/pull/12601
         try:

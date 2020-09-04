@@ -32,6 +32,6 @@ class Arguments():
                 raise TypeError(f'{self.name} must be of type str')
         else:
             # filter out empty entries from list of arguments.
-            value = list(filter(None, value.split(self.delim)))
+            value = list(value.split(self.delim))
 
         self.data[id(instance)] = value

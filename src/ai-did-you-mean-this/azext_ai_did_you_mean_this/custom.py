@@ -128,14 +128,53 @@ def recommend_recovery_options(version, command, parameters, extension):
 
             # only show recommendations when we can contact the service.
             if response and response.status_code == HTTPStatus.OK:
-                recommendations = get_recommendations_from_http_response(response)
+                #recommendations = get_recommendations_from_http_response(response)
+
+                error_message = telemetry._session.result_summary.lower()
+                user_fault_type = 'Unknown'
+                if 'unrecognized' in error_message:
+                    user_fault_type = 'UnrecognizedArguments'
+                elif 'expected one argument' in error_message or 'expected at least one argument' in error_message:
+                    user_fault_type = 'ExpectedArgument'
+                elif 'command group' in error_message:
+                    user_fault_type = 'UnknownSubcommand'
+                elif 'arguments are required' in error_message:
+                    user_fault_type = 'MissingRequiredParameters'
+                    if '_subcommand' in error_message:
+                        user_fault_type = 'MissingRequiredSubcommand'
+                    elif '_command_package' in error_message:
+                        user_fault_type = 'UnableToParseCommandInput'
+                elif 'not found' in error_message or 'could not be found' in error_message:
+                    user_fault_type = 'AzureResourceNotFound'
+                    if 'storage_account' in error_message:
+                        user_fault_type = 'StorageAccountNotFound'
+                    elif 'resource_group' in error_message:
+                        user_fault_type = 'ResourceGroupNotFound'
+                elif 'pattern' in error_message or 'is not a valid value' in error_message or 'invalid' in error_message:
+                    user_fault_type = 'InvalidParameterValue'
+                    if 'jmespath_type' in error_message:
+                        user_fault_type = 'InvalidJMESPathQuery'
+                    elif 'datetime_type' in error_message:
+                        user_fault_type = 'InvalidDateTimeArgumentValue'
+                    elif '--output' in error_message:
+                        user_fault_type = 'InvalidOutputType'
+                elif "validation error" in error_message:
+                    user_fault_type = 'ValidationError'
+
+
+                with open(r'C:\Users\chotool.REDMOND\Documents\Azure\azure-cli-extensions\src\ai-did-you-mean-this\azext_ai_did_you_mean_this\model.json') as model_file:
+                    model = json.load(model_file)
+
+                suggestions = model.get(user_fault_type, {}).get(command.lower().strip(), [])
+                print(suggestions)
+                recommendations = [Suggestion.parse(suggestion) for suggestion in suggestions]
 
                 if recommendations:
                     show_recommendation_header()
 
                     for recommendation in recommendations:
                         append(f"{recommendation}")
-                    
+
                     with open(r'C:\Users\chotool.REDMOND\Documents\Azure\azure-cli-extensions\src\ai-did-you-mean-this\azext_ai_did_you_mean_this\toc.json') as toc_file:
                         toc = json.load(toc_file)
 
