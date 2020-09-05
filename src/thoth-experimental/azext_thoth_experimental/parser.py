@@ -38,16 +38,33 @@ class CommandParser():
 
     def __init__(self, args: List[str]):
         super().__init__()
+        self.cmd_tbl = CommandTableEventHandler.PRE_TRUNCATE_CMD_TBL
+        self.cmd_grp_tbl = CommandTableEventHandler.CMD_GRP_TBL
+        self.command_group: str = self._get_command_group(args)
 
-        raw_input: str = ' '.join(args)
-        command = self.COMMAND_PATTERN.match(raw_input)
+        _input: str = ' '.join(args)
+        command: re.Match = self.COMMAND_PATTERN.match(_input)
 
-        self.command = command.group() if command else None
+        self.command = command.group().strip().lower() if command else None
+        self.is_valid_command = self.command in self.cmd_tbl
         self.arguments: List[Argument] = []
 
-        for parameter, argument, _start_quote, _end_quote in self.ARGUMENT_PATTERN.findall(raw_input):
+        for parameter, argument, _start_quote, _end_quote in self.ARGUMENT_PATTERN.findall(_input):
             self.arguments.append(Argument(parameter, argument))
+
+    def _get_command_group(self, tokens: List[str]):
+        command_group: str = ''
+
+        for token in tokens:
+            next_command_group = f'{command_group}{" " if command_group else ""}{token}'
+            if next_command_group in self.cmd_grp_tbl:
+                command_group = next_command_group
+            else:
+                break
+
+        return command_group
 
     @property
     def cli_command(self) -> CliCommand:
         return CliCommand(command=self.command, arguments=self.arguments)
+

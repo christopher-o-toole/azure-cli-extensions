@@ -18,4 +18,9 @@ class Command(Text):
         if hasattr(value, 'group') and callable(value.group):
             value = value.group()
 
-        return value.strip()
+        value = value.strip()
+
+        if not value.startswith('az'):
+            value = f'az {value}'
+
+        return value
