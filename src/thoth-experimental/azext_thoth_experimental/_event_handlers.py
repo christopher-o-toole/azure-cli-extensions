@@ -16,6 +16,7 @@ class DefaultCommandLoader():
 class CommandTableEventHandler():
     COMMANDS_LOADER = DefaultCommandLoader()
     CMD_TBL = {}
+    CMD_GRP_TBL = {}
     PRE_TRUNCATE_CMD_TBL = {}
 
     @classmethod
@@ -26,3 +27,4 @@ class CommandTableEventHandler():
     def on_load_command_table(cls, cmd_tbl, commands_loader):
         cls.CMD_TBL = cmd_tbl
         cls.COMMANDS_LOADER.command_table = commands_loader.command_table
+        cls.CMD_GRP_TBL = commands_loader.command_group_table
