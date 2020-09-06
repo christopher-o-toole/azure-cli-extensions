@@ -1,1 +1,2 @@
-**/model/model.json
+# don't upload any local model files to GitHub.
+**/model/*.json

@@ -11,6 +11,7 @@ from azext_thoth_experimental._event_handlers import (
     CommandTableEventHandler
 )
 from azext_thoth_experimental.custom import main
+from azext_thoth_experimental._config import GlobalConfig
 
 
 class ThothExperimentalCommandsLoader(AzCommandsLoader):
@@ -45,6 +46,11 @@ class ThothExperimentalCommandsLoader(AzCommandsLoader):
                 commands_loader=cli_ctx.invocation.commands_loader
             )
         )
+        # per https://github.com/Azure/azure-cli/pull/12601
+        try:
+            GlobalConfig.ENABLE_STYLING = cli_ctx.enable_color
+        except AttributeError:
+            pass
 
     def load_command_table(self, args):
         from azext_thoth_experimental.commands import load_command_table
