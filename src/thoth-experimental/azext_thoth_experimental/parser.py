@@ -1,33 +1,9 @@
 import re
-from typing import List, Pattern, Union
+from typing import List, Pattern
 
-from colorama import Fore, Style
 
-from azext_thoth_experimental._argument import Argument, ArgumentType
-from azext_thoth_experimental._command import Command, CommandType
+from azext_thoth_experimental._cli_command import CliCommand
 from azext_thoth_experimental._event_handlers import CommandTableEventHandler
-from azext_thoth_experimental._util import safe_repr
-
-
-class CliCommand():
-    command = Command()
-
-    def __init__(self, command: str, arguments: Union[None, List[Argument]] = None):
-        super().__init__()
-        self.command = command
-        self.arguments = arguments
-
-    def __repr__(self):
-        attrs = {
-            'command': self.command,
-            'arguments': self.arguments
-        }
-        return safe_repr(self, attrs)
-
-    def __str__(self):
-        arguments = [str(arg) for arg in self.arguments] or []
-        buffer = [self.command, *arguments]
-        return ' '.join(buffer)
 
 
 class CommandParser():
@@ -47,10 +23,12 @@ class CommandParser():
 
         self.command = command.group().strip().lower() if command else None
         self.is_valid_command = self.command in self.cmd_tbl
-        self.arguments: List[Argument] = []
+        self.parameters: List[str] = []
+        self.arguments: List[str] = []
 
         for parameter, argument, _start_quote, _end_quote in self.ARGUMENT_PATTERN.findall(_input):
-            self.arguments.append(Argument(parameter, argument))
+            self.parameters.append(parameter)
+            self.arguments.append(argument)
 
     def _get_command_group(self, tokens: List[str]):
         command_group: str = ''
@@ -65,6 +43,5 @@ class CommandParser():
         return command_group
 
     @property
-    def cli_command(self) -> CliCommand:
-        return CliCommand(command=self.command, arguments=self.arguments)
-
+    def cli_command(self):
+        return CliCommand(self.command, self.parameters, self.arguments)
