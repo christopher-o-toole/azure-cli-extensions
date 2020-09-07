@@ -12,8 +12,10 @@ from typing import Dict, List, Union
 import azure.cli.core.telemetry as cli_core_telemetry
 
 from azext_thoth_experimental._logging import get_logger
+from azext_thoth_experimental._suggestion import Suggestion
 
-from azext_thoth_experimental.model.file_util import assert_file_exists
+from azext_thoth_experimental.model._file_util import assert_file_exists
+from azext_thoth_experimental.model.help import HelpTable
 
 logger = get_logger(__name__)
 
@@ -106,11 +108,11 @@ class FailureRecoveryModel():
 
         return user_fault_type
 
-    def get_suggestions(self, command: str, user_fault_type: Union[UserFaultType, None] = None) -> List['Suggestion']:
-        from azext_thoth_experimental._suggestion import Suggestion
+    def get_suggestions(self, command: str, user_fault_type: Union[UserFaultType, None] = None,
+                        help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
         user_fault_type = user_fault_type or self._get_user_fault_type()
         suggestions = self.model.get(user_fault_type, {}).get(command, [])
-        return [Suggestion.parse(suggestion) for suggestion in suggestions]
+        return [Suggestion.parse(suggestion, help_table) for suggestion in suggestions]
 
     @classmethod
     def load(cls, path: Path = DEFAULT_MODEL_PATH):

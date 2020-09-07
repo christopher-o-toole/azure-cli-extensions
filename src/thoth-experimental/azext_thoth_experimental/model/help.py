@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, Union
 
-from azext_thoth_experimental.model.file_util import assert_file_exists
+from azext_thoth_experimental.model._file_util import assert_file_exists
 from azext_thoth_experimental.model.link import Link
 
 HelpTableType = Dict[str, Any]
