@@ -8,7 +8,7 @@ from typing import List, Union
 from colorama import Style, Fore
 
 from azext_thoth_experimental._suggestion import Suggestion
-from azext_thoth_experimental.model import Link
+from azext_thoth_experimental.model.link import Link
 
 
 def show_suggestions(suggestions: List[Suggestion], link: Union[Link, None]):
