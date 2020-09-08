@@ -6,6 +6,7 @@
 from typing import Dict, Union
 
 from colorama import Fore, Style
+#setattr(Fore, '')
 
 from azext_thoth_experimental._cli_command import CliCommand
 from azext_thoth_experimental._logging import get_logger
@@ -40,7 +41,34 @@ class Suggestion(CliCommand):
             self._apply_styles()
 
     def _apply_styles(self):
-        self.command = f'{Style.BRIGHT}{Fore.BLUE}az {self.command}{Style.RESET_ALL}'
+        from azure.cli.core.error import AzCliErrorHandler, AzCliErrorType
+        from azext_thoth_experimental._personalization import remove_ansi_color_codes
+        error_handler = AzCliErrorHandler()
+        last_error = error_handler.get_last_error()
+
+        applied_command_highlighting = False
+
+        if last_error and last_error.cli_error_type == AzCliErrorType.CommandNotFound:
+            failed_command = remove_ansi_color_codes(last_error.message).replace('Command not found: az ', '').strip()
+            failure_tokens = failed_command.split()
+            suggested_tokens = self.command.split()
+            failure_token_set = set(failure_tokens)
+            suggested_token_set = set(suggested_tokens)
+            if failure_token_set.issubset(suggested_token_set):
+                missing_subcommands = suggested_token_set.difference(failure_token_set)
+                command_buffer = [f'{Style.BRIGHT}{Fore.BLUE}az']
+                for token in suggested_tokens:
+                    if not applied_command_highlighting and token in missing_subcommands:
+                        token = f'\x1b[38;2;136;174;255m{token}{Fore.BLUE}'
+                        applied_command_highlighting = True
+                    command_buffer.append(token)
+                command_buffer.append(Style.RESET_ALL)
+                self.command = ' '.join(command_buffer)
+
+
+        if not applied_command_highlighting:
+            self.command = f'{Style.BRIGHT}{Fore.BLUE}az {self.command}{Style.RESET_ALL}'
+
         self.description = f'{Fore.LIGHTBLACK_EX}{self.description}{Style.RESET_ALL}' if self.description else None
         self.parameters = [f'{Fore.BLUE}{param}{Style.RESET_ALL}' for param in self.parameters]
 

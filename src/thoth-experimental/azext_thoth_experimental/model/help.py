@@ -48,6 +48,14 @@ class HelpTable():
 
         return description
 
+    def get_parameter_table(self, entity: str) -> Dict[str, Any]:
+        param_tbl: Dict[str, Any] = {}
+
+        if entity in self:
+            param_tbl = self[entity]['parameters']
+
+        return param_tbl
+
     def generate_link(self, keyword: str) -> Union[Link, None]:
         locale = 'en-us'
         link = None

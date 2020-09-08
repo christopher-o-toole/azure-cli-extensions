@@ -5,9 +5,10 @@
 
 import json
 import os
+import re
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Callable, Dict, List, Pattern, Union
 
 import azure.cli.core.telemetry as cli_core_telemetry
 
@@ -54,10 +55,43 @@ class UserFaultType(Enum):
         return hash(self.value)
 
 
+def _handle_invalid_help_call(match: re.Match, help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
+    command_or_command_group: str = match.group('command_or_command_group')
+    if help_table and command_or_command_group in help_table:
+        return [
+            {
+                'command': command_or_command_group,
+                'description': f'Show help for az {command_or_command_group}',
+                'parameters': '--help',
+                'placeholders': ''
+            }
+        ]
+
+
+class RuleBasedFailureRecoveryModel():
+    def __init__(self):
+        super().__init__()
+
+        self.rules: Dict[Pattern[str], Callable[[str], List[Suggestion]]] = {
+            re.compile(r'(?P<command_or_command_group>[a-z-\s]+)\s+(help)$'): _handle_invalid_help_call
+        }
+
+    def get_suggestions(self, raw_input: str, help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
+
+        suggestions: List[Suggestion] = []
+
+        for rule, handler in self.rules.items():
+            if match := rule.match(raw_input):
+                suggestions = handler(match, help_table)
+
+        return suggestions
+
+
 class FailureRecoveryModel():
     def __init__(self, model: ModelType):
         super().__init__()
         self.model = model
+        self.rule_based_model = RuleBasedFailureRecoveryModel()
 
     def _get_user_fault_type(self) -> UserFaultType:
         # pylint: disable=protected-access
@@ -84,9 +118,9 @@ class FailureRecoveryModel():
             elif 'not found' in error_message or 'could not be found' in error_message \
                  or 'resource not found' in error_message:
                 user_fault_type = UserFaultType.AzureResourceNotFound
-                if 'storage_account' in error_message:
+                if 'storage_account' in error_message or 'storage account' in error_message:
                     user_fault_type = UserFaultType.StorageAccountNotFound
-                elif 'resource_group' in error_message:
+                elif 'resource_group' in error_message or 'resource group' in error_message:
                     user_fault_type = UserFaultType.ResourceGroupNotFound
             elif 'pattern' in error_message or 'is not a valid value' in error_message or 'invalid' in error_message:
                 user_fault_type = 'InvalidParameterValue'
@@ -96,7 +130,7 @@ class FailureRecoveryModel():
                     user_fault_type = UserFaultType.InvalidDateTimeArgumentValue
                 elif '--output' in error_message:
                     user_fault_type = UserFaultType.InvalidOutputType
-            elif "validation error" in error_message or 'character not allowed':
+            elif "validation error" in error_message or 'character not allowed' in error_message:
                 user_fault_type = UserFaultType.ValidationError
         else:
             logger.debug('Result summary was None. Unable to classify error.')
@@ -110,8 +144,17 @@ class FailureRecoveryModel():
 
     def get_suggestions(self, command: str, user_fault_type: Union[UserFaultType, None] = None,
                         help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
+        resource_not_found_user_fault_type_set = {
+            UserFaultType.AzureResourceNotFound,
+            UserFaultType.StorageAccountNotFound,
+            UserFaultType.ResourceGroupNotFound
+        }
         user_fault_type = user_fault_type or self._get_user_fault_type()
-        suggestions = self.model.get(user_fault_type, {}).get(command, [])
+        # get suggestions based on rule-based logic.
+        suggestions = self.rule_based_model.get_suggestions(command, help_table)
+        # get suggestions from a more complex model if rule-based logic fails.
+        key = '' if user_fault_type in resource_not_found_user_fault_type_set else command
+        suggestions = suggestions or self.model.get(user_fault_type, {}).get(key, [])
         return [Suggestion.parse(suggestion, help_table) for suggestion in suggestions]
 
     @classmethod

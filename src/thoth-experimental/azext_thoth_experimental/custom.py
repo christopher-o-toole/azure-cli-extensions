@@ -13,6 +13,7 @@ from azure.cli.core.error import AzCliErrorHandler
 from azext_thoth_experimental._display import show_suggestions
 from azext_thoth_experimental._event_handlers import ParseArgsEventHandler
 from azext_thoth_experimental._logging import get_logger
+from azext_thoth_experimental._personalization import get_personalized_suggestions
 from azext_thoth_experimental.parser import CommandParser
 from azext_thoth_experimental.version import VERSION
 from azext_thoth_experimental.model.failure_recovery import FailureRecoveryModel
@@ -77,6 +78,8 @@ def main(*_, **__):
             command_group: str = command_parser.command_group
 
             suggestions = model.get_suggestions(command=command, help_table=help_table)
+            suggestions = get_personalized_suggestions(suggestions, parser=command_parser, help_table=help_table)
+
             cli_docs_link = None
 
             if help_table:
