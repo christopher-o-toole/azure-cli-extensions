@@ -26,12 +26,7 @@ GLOBAL_PARAM_LOOKUP_TBL = {
     '--verbose': None
 }
 
-GLOBAL_PARAM_BLOCKLIST = {
-    '--only-show-errors',
-    '--help',
-    '--debug',
-    '--verbose',
-}
+GLOBAL_PARAM_BLOCKLIST = set()
 
 SUPPRESSED_STR = "==SUPPRESS=="
 

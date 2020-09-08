@@ -36,7 +36,6 @@ class Command():
     @classmethod
     def normalize(cls, command: Union[None, 'Command'], *parameters: Tuple[str]):
         normalized_parameters = []
-        unrecognized_parameters = []
         parameter_lookup_table = command.parameter_lookup_table if command else GLOBAL_PARAM_LOOKUP_TBL.copy()
         terms = parameter_lookup_table.keys()
 
@@ -64,12 +63,10 @@ class Command():
 
             if normalized_form in GLOBAL_PARAM_BLOCKLIST:
                 continue
-            if is_recognized(normalized_form):
-                normalized_parameters.append(normalized_form)
-            else:
-                unrecognized_parameters.append(normalized_form)
 
-        return sorted(set(normalized_parameters)), sorted(set(unrecognized_parameters))
+            normalized_parameters.append(normalized_form)
+
+        return normalized_parameters
 
     @classmethod
     def get_parameter_table(cls, command_table: dict, command: str,
