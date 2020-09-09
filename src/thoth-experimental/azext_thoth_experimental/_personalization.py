@@ -29,6 +29,8 @@ def mentioned_in_error_message(parameter: str) -> bool:
     mentioned = any(value in message for value in possible_values for message in messages)
     return mentioned
 
+def reduce_param_description(desc: str):
+    return re.sub(r'You can configure[^$]+$|the|new', '', desc)
 
 def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandParser, help_table: HelpTable) -> List[Suggestion]:
     cmd_parse_tbl = parser.cmd_parse_tbl
@@ -51,16 +53,31 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
         ranks = []
         update_suggestion: bool = False
 
-        if help_table and (param_tbl := help_table.get_parameter_table(suggested_command)):
+        if help_table and (param_tbl := help_table.get_parameter_table(suggested_command)) and (fail_cmd_param_tbl := help_table.get_parameter_table(parser.command)):
             valid_parameter_set = set([*list(param_tbl.keys()), *[alias for info in param_tbl.values() for alias in info.setdefault('name', [])]])
+            fail_cmd_param_tbl = {alias: info for name, info in fail_cmd_param_tbl.items() for alias in info.setdefault('name', [])}
+            param_tbl = {alias: info for name, info in param_tbl.items() for alias in info.setdefault('name', [])}
+
             for parameter, argument in zip(parser.normalized_parameters, parser.arguments):
                 user_specified_parameter[parameter] = True
                 if parameter not in valid_parameter_set:
                     continue
-                if not is_parameter_suggested[parameter] and not mentioned_in_error_message(parameter) and parameter not in GLOBAL_PARAM_LOOKUP_TBL:
-                    suggested_parameters.append(parameter)
-                    suggested_placeholders.append(argument)
-                    update_suggestion = True
+
+                fail_param_summary = fail_cmd_param_tbl.get(parameter, {}).get('short-summary')
+                param_summary = param_tbl.get(parameter, {}).get('short-summary')
+                are_logically_equivalent = fail_param_summary == param_summary
+                if fail_param_summary and param_summary and not are_logically_equivalent:
+                    fail_param_summary, param_summary = reduce_param_description(fail_param_summary), reduce_param_description(param_summary)
+                    from difflib import SequenceMatcher
+                    comp = SequenceMatcher(None, fail_param_summary, param_summary)
+                    ratio = comp.ratio()
+                    are_logically_equivalent = ratio >= .9
+
+                if not is_parameter_suggested[parameter] and not mentioned_in_error_message(parameter) and parameter not in GLOBAL_PARAM_LOOKUP_TBL and are_logically_equivalent:
+                    if not any(alias in is_parameter_suggested for alias in param_tbl.get(parameter, {}).set_default('name', [])):
+                        suggested_parameters.append(parameter)
+                        suggested_placeholders.append(argument)
+                        update_suggestion = True
 
             # marked_for_deletion = set()
             # for elem_idx, suggested_parameter in enumerate(suggested_parameters):
