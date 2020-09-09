@@ -20,17 +20,22 @@ def remove_ansi_color_codes(text: str) -> str:
 
 def mentioned_in_error_message(parameter: str) -> bool:
     from azure.cli.core.error import AzCliErrorHandler
+    from azure.cli.core.telemetry import _session
     error_handler = AzCliErrorHandler()
     last_error = error_handler.get_last_error()
     messages = [last_error.message, last_error.overridden_message] if last_error else []
+    messages.append(_session.result_summary)
+    messages = [msg for msg in messages if msg is not None]
     mentioned = True
 
-    possible_values = [parameter, re.sub('-', '_', parameter), re.sub('-', ' ', parameter)]
+    possible_values = [parameter, re.sub('-', '_', parameter), re.sub('-', '', parameter)]
     mentioned = any(value in message for value in possible_values for message in messages)
     return mentioned
 
+
 def reduce_param_description(desc: str):
     return re.sub(r'You can configure[^$]+$|the|new', '', desc)
+
 
 def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandParser, help_table: HelpTable) -> List[Suggestion]:
     cmd_parse_tbl = parser.cmd_parse_tbl
@@ -96,8 +101,8 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
 
         for j, parameter in enumerate(suggested_parameters):
             is_parameter_suggested[parameter] = True
-
-            if (entry := cmd_parse_tbl.get(parameter)) and (argument := entry.autocorrected_argument or entry.argument):
+            if (entry := cmd_parse_tbl.get(parameter)) and (argument := entry.autocorrected_argument or entry.argument) \
+               and (not mentioned_in_error_message(parameter) or entry.autocorrected_argument != entry.argument):
                 suggested_placeholders[j] = argument
                 suggested_parameters[j] = entry.parameter
                 update_suggestion = True
