@@ -77,7 +77,7 @@ def main(*_, **__):
             is_valid_command: bool = command_parser.is_valid_command
             command_group: str = command_parser.command_group
 
-            suggestions = model.get_suggestions(command=command, help_table=help_table)
+            suggestions = model.get_suggestions(parser=command_parser, help_table=help_table)
             suggestions = get_personalized_suggestions(suggestions, parser=command_parser, help_table=help_table)
 
             cli_docs_link = None

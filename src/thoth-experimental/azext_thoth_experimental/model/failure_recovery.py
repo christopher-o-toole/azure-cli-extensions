@@ -14,6 +14,7 @@ import azure.cli.core.telemetry as cli_core_telemetry
 
 from azext_thoth_experimental._logging import get_logger
 from azext_thoth_experimental._suggestion import Suggestion
+from azext_thoth_experimental.parser import CommandParseTable
 
 from azext_thoth_experimental.model._file_util import assert_file_exists
 from azext_thoth_experimental.model.help import HelpTable
@@ -76,15 +77,29 @@ class RuleBasedFailureRecoveryModel():
             re.compile(r'(?P<command_or_command_group>[a-z-\s]+)\s+(help)$'): _handle_invalid_help_call
         }
 
-    def get_suggestions(self, raw_input: str, help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
-
+    def get_suggestions(self, parser: CommandParseTable, help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
         suggestions: List[Suggestion] = []
 
         for rule, handler in self.rules.items():
-            if match := rule.match(raw_input):
+            if match := rule.match(parser.command):
                 suggestions = handler(match, help_table)
 
         return suggestions
+
+
+def get_error_message():
+    # pylint: disable=protected-access
+    error_message = cli_core_telemetry._session.result_summary
+
+    if not error_message:
+        from azure.cli.core.error import AzCliErrorHandler
+        error_handler = AzCliErrorHandler()
+        last_error = error_handler.get_last_error()
+
+        if last_error:
+            error_message = last_error.overridden_message
+
+    return error_message.lower().strip()
 
 
 class FailureRecoveryModel():
@@ -95,11 +110,11 @@ class FailureRecoveryModel():
 
     def _get_user_fault_type(self) -> UserFaultType:
         # pylint: disable=protected-access
-        error_message = cli_core_telemetry._session.result_summary
+
+        error_message = get_error_message()
         user_fault_type: UserFaultType = UserFaultType.Unknown
 
         if error_message is not None:
-            error_message = error_message.lower()
             logger.debug(f'Classiying the following error message "{error_message}"')
 
             if 'unrecognized' in error_message:
@@ -130,6 +145,10 @@ class FailureRecoveryModel():
                     user_fault_type = UserFaultType.InvalidDateTimeArgumentValue
                 elif '--output' in error_message:
                     user_fault_type = UserFaultType.InvalidOutputType
+                elif 'resource_group' in error_message:
+                    user_fault_type = UserFaultType.InvalidResourceGroupName
+                elif 'storage_account' in error_message:
+                    user_fault_type = UserFaultType.InvalidAccountName
             elif "validation error" in error_message or 'character not allowed' in error_message:
                 user_fault_type = UserFaultType.ValidationError
         else:
@@ -142,19 +161,34 @@ class FailureRecoveryModel():
 
         return user_fault_type
 
-    def get_suggestions(self, command: str, user_fault_type: Union[UserFaultType, None] = None,
+    def _reduce(self, entity: str, keys: List[str], delim: str = ' ', recurse: bool = True):
+        key: Union[str, None] = entity
+
+        if entity and entity not in keys and recurse:
+            last_delim_idx = entity.rfind(delim)
+            if last_delim_idx != -1:
+                key = self._reduce(key[:last_delim_idx], keys)
+                logger.debug('FailureRecoveryModel._reduce : Reduce operation yielded key %r', key)
+
+        return key
+
+    def get_suggestions(self, parser: CommandParseTable, user_fault_type: Union[UserFaultType, None] = None,
                         help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
         resource_not_found_user_fault_type_set = {
+            UserFaultType.InvalidResourceGroupName,
+            UserFaultType.InvalidAccountName,
             UserFaultType.AzureResourceNotFound,
             UserFaultType.StorageAccountNotFound,
             UserFaultType.ResourceGroupNotFound
         }
         user_fault_type = user_fault_type or self._get_user_fault_type()
         # get suggestions based on rule-based logic.
-        suggestions = self.rule_based_model.get_suggestions(command, help_table)
+        suggestions = self.rule_based_model.get_suggestions(parser, help_table)
         # get suggestions from a more complex model if rule-based logic fails.
-        key = '' if user_fault_type in resource_not_found_user_fault_type_set else command
-        suggestions = suggestions or self.model.get(user_fault_type, {}).get(key, [])
+        key = '' if user_fault_type in resource_not_found_user_fault_type_set else parser.command
+        user_fault_type_model = self.model.get(user_fault_type, {})
+        key = self._reduce(key, user_fault_type_model.keys())
+        suggestions = suggestions or user_fault_type_model.get(key, [])
         return [Suggestion.parse(suggestion, help_table) for suggestion in suggestions]
 
     @classmethod
