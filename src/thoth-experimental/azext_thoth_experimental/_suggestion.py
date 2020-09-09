@@ -63,7 +63,6 @@ class Suggestion(CliCommand):
                         applied_command_highlighting = True
                     command_buffer.append(token)
                 self.command = ' '.join(command_buffer) + Style.RESET_ALL
-                print(repr(self.command))
 
         if not applied_command_highlighting:
             self.command = f'{Style.BRIGHT}{Fore.BLUE}az {self.command}{Style.RESET_ALL}'
