@@ -6,7 +6,6 @@
 from typing import Dict, Union
 
 from colorama import Fore, Style
-#setattr(Fore, '')
 
 from azext_thoth_experimental._cli_command import CliCommand
 from azext_thoth_experimental._logging import get_logger

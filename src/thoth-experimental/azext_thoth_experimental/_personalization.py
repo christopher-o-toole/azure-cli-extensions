@@ -29,6 +29,7 @@ def mentioned_in_error_message(parameter: str) -> bool:
     mentioned = any(value in message for value in possible_values for message in messages)
     return mentioned
 
+
 def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandParser, help_table: HelpTable) -> List[Suggestion]:
     cmd_parse_tbl = parser.cmd_parse_tbl
     parameter_rank: DefaultDict[str, float] = defaultdict(
