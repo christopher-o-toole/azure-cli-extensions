@@ -74,7 +74,7 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
                     are_logically_equivalent = ratio >= .9
 
                 if not is_parameter_suggested[parameter] and not mentioned_in_error_message(parameter) and parameter not in GLOBAL_PARAM_LOOKUP_TBL and are_logically_equivalent:
-                    if not any(alias in is_parameter_suggested for alias in param_tbl.get(parameter, {}).setdefault('name', [])):
+                    if not any(is_parameter_suggested[alias] for alias in param_tbl.get(parameter, {}).get('name', [])):
                         suggested_parameters.append(parameter)
                         suggested_placeholders.append(argument)
                         update_suggestion = True
