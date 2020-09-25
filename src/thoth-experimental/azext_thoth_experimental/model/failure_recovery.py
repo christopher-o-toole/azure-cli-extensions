@@ -149,7 +149,7 @@ class FailureRecoveryModel():
                     user_fault_type = UserFaultType.InvalidResourceGroupName
                 elif 'storage_account' in error_message:
                     user_fault_type = UserFaultType.InvalidAccountName
-            elif "validation error" in error_message or 'character not allowed' in error_message:
+            elif "validation error" in error_message:
                 user_fault_type = UserFaultType.ValidationError
         else:
             logger.debug('Result summary was None. Unable to classify error.')
