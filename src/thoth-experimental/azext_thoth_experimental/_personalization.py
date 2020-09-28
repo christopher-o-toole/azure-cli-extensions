@@ -19,12 +19,9 @@ def remove_ansi_color_codes(text: str) -> str:
 
 
 def mentioned_in_error_message(parameter: str) -> bool:
-    from azure.cli.core.error import AzCliErrorHandler
+    from azext_thoth_experimental.hook._cli_error_handling import last_cli_error
     from azure.cli.core.telemetry import _session
-    error_handler = AzCliErrorHandler()
-    last_error = error_handler.get_last_error()
-    messages = [last_error.message, last_error.overridden_message] if last_error else []
-    messages.append(_session.result_summary)
+    messages = [last_cli_error.error_msg, _session.result_summary]
     messages = [msg for msg in messages if msg is not None]
     mentioned = True
 
@@ -76,7 +73,7 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
                     from difflib import SequenceMatcher
                     comp = SequenceMatcher(None, fail_param_summary, param_summary)
                     ratio = comp.ratio()
-                    are_logically_equivalent = ratio >= .9
+                    are_logically_equivalent = ratio >= .7
 
                 if not is_parameter_suggested[parameter] and not mentioned_in_error_message(parameter) and parameter not in GLOBAL_PARAM_LOOKUP_TBL and are_logically_equivalent:
                     if not any(is_parameter_suggested[alias] for alias in param_tbl.get(parameter, {}).get('name', [])):
@@ -93,7 +90,7 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
             # suggested_parameters = [p for idx, p in enumerate(suggested_parameters) if idx not in marked_for_deletion]
             # suggested_placeholders = [p for idx, p in enumerate(suggested_placeholders) if idx not in marked_for_deletion]
             # update_suggestion = True
-        else:
+        elif help_table is None:
             logger.debug('No help table loaded. Personalization of suggestions based on user input could be impacted.')
 
         preferred = {'group': {'--resource-group': '--name'}}

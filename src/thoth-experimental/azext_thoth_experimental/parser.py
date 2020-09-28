@@ -1,7 +1,5 @@
 import re
-from typing import Dict, List, Tuple, Pattern, Union
-
-from azure.cli.core.error import AzCliErrorHandler, AzCliError, SuggestedErrorCorrection
+from typing import Dict, List, Pattern
 
 from azext_thoth_experimental._cli_command import CliCommand
 from azext_thoth_experimental._command import Command
@@ -20,15 +18,12 @@ class CommandParseTableEntry():
         self.argument = argument
         self.autocorrected_argument = argument
 
-        self._last_error: AzCliError = AzCliErrorHandler().get_last_error()
-        self._suggested_fix: SuggestedErrorCorrection = self._get_suggested_fix()
+        from azext_thoth_experimental.hook._cli_error_handling import last_cli_error
+        self.suggested_fix = last_cli_error.suggested_fix
 
-        if self._suggested_fix and normalized_parameter == self._suggested_fix.parameter:
-            if self._suggested_fix.suggestion:
-                self.autocorrected_argument = self._suggested_fix.suggestion
-
-    def _get_suggested_fix(self) -> Union[None, SuggestedErrorCorrection]:
-        return self._last_error.suggested_fix if self._last_error else None
+        if self.suggested_fix and normalized_parameter == self.suggested_fix.parameter:
+            if self.suggested_fix.suggestion:
+                self.autocorrected_argument = self.suggested_fix.suggestion
 
     def __repr__(self):
         attrs = {

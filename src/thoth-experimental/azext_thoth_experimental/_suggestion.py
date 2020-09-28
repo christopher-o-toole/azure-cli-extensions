@@ -3,11 +3,13 @@
 # Licensed under the MIT License. See License.txt in the project root for license information.
 # --------------------------------------------------------------------------------------------
 
+import re
 from typing import Dict, Union
 
-from colorama import Fore, Style
+from colorama import Style
 
 from azext_thoth_experimental._cli_command import CliCommand
+from azext_thoth_experimental._theme import get_theme
 from azext_thoth_experimental._logging import get_logger
 from azext_thoth_experimental._style import should_enable_styling
 from azext_thoth_experimental._types import ArgumentsType
@@ -15,6 +17,7 @@ from azext_thoth_experimental._util import safe_repr
 from azext_thoth_experimental.model.help import HelpTable
 
 logger = get_logger(__name__)
+theme = get_theme()
 
 
 class SuggestionParseError(KeyError):
@@ -40,41 +43,43 @@ class Suggestion(CliCommand):
             self._apply_styles()
 
     def _apply_styles(self):
-        from azure.cli.core.error import AzCliErrorHandler, AzCliErrorType
-        from azext_thoth_experimental._personalization import remove_ansi_color_codes
-        error_handler = AzCliErrorHandler()
-        last_error = error_handler.get_last_error()
+        from azure.cli.core.command_recommender import AladdinUserFaultType
+        from azext_thoth_experimental.hook._cli_error_handling import last_cli_error, command_recommender_hook
 
         applied_command_highlighting = False
 
-        if last_error and last_error.cli_error_type == AzCliErrorType.CommandNotFound:
-            failed_command = remove_ansi_color_codes(last_error.message).replace('Command not found: az ', '').strip()
-            failure_tokens = failed_command.split()
-            suggested_tokens = self.command.split()
-            failure_token_set = set(failure_tokens)
-            suggested_token_set = set(suggested_tokens)
-            if failure_token_set.issubset(suggested_token_set):
-                missing_subcommands = suggested_token_set.difference(failure_token_set)
-                command_buffer = [f'{Style.BRIGHT}{Fore.BLUE}az']
-                for token in suggested_tokens:
-                    if not applied_command_highlighting and token in missing_subcommands:
-                        token = f'\x1b[38;2;136;174;255m{token}{Fore.BLUE}'
-                        applied_command_highlighting = True
-                    command_buffer.append(token)
-                self.command = ' '.join(command_buffer) + Style.RESET_ALL
+        if command_recommender_hook.aladdin_user_fault_type == AladdinUserFaultType.UnknownSubcommand:
+            command_group = re.sub(r'az\s*', '', last_cli_error.command_group)
+            unknown_subcommand = last_cli_error.unknown_subcommand
+            if unknown_subcommand:
+                failure_tokens = [*command_group.split(), unknown_subcommand]
+                suggested_tokens = self.command.split()
+                failure_token_set = set(failure_tokens)
+                suggested_token_set = set(suggested_tokens)
+                if failure_token_set.issubset(suggested_token_set):
+                    missing_subcommands = suggested_token_set.difference(failure_token_set)
+                    command_buffer = [f'{Style.BRIGHT}{theme.COMMAND}az']
+                    for token in suggested_tokens:
+                        if not applied_command_highlighting and token in missing_subcommands:
+                            token = f'{theme.COMMAND_HIGHLIGHT}{token}{theme.COMMAND}'
+                            applied_command_highlighting = True
+                        command_buffer.append(token)
+                    self.command = ' '.join(command_buffer) + Style.RESET_ALL
 
         if not applied_command_highlighting:
-            self.command = f'{Style.BRIGHT}{Fore.BLUE}az {self.command}{Style.RESET_ALL}'
+            self.command = f'{Style.BRIGHT}{theme.COMMAND}az {self.command}{Style.RESET_ALL}'
 
-        self.description = f'{Fore.LIGHTBLACK_EX}{self.description}{Style.RESET_ALL}' if self.description else None
-        self.parameters = [f'{Fore.BLUE}{param}{Style.RESET_ALL}' for param in self.parameters]
+        self.description = f'{theme.PRIMARY_TEXT}{self.description}{Style.RESET_ALL}' if self.description else None
+        self.parameters = [f'{theme.PARAMETER}{param}{Style.RESET_ALL}' for param in self.parameters]
+        self.arguments = [f'{theme.ARGUMENT}{arg}{Style.RESET_ALL}' for arg in self.arguments]
 
     def __str__(self):
-        buffer = [super().__str__()]
+        buffer = []
 
         if self.description:
             buffer.append(self.description)
 
+        buffer.append(super().__str__())
         return '\n'.join(buffer)
 
     def __repr__(self):

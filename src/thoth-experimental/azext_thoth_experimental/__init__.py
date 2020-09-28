@@ -10,6 +10,8 @@ from azext_thoth_experimental._event_handlers import (
     ParseArgsEventHandler,
     CommandTableEventHandler
 )
+from azext_thoth_experimental.hook._cli_error_handling import apply_cli_error_handling_hooks
+from azext_thoth_experimental.hook._cli_validation import apply_cli_validation_hook
 from azext_thoth_experimental.custom import main
 from azext_thoth_experimental._config import GlobalConfig
 
@@ -21,6 +23,9 @@ class ThothExperimentalCommandsLoader(AzCommandsLoader):
         thoth_experimental_custom = CliCommandType(
             operations_tmpl='azext_thoth_experimental.custom#{}')
         super().__init__(cli_ctx=cli_ctx, custom_command_type=thoth_experimental_custom)
+
+        apply_cli_error_handling_hooks()
+        apply_cli_validation_hook()
 
         # excute after a command ran
         from knack.events import (
