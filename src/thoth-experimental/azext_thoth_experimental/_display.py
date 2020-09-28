@@ -22,7 +22,7 @@ def show_suggestions(suggestions: List[Suggestion], link: Union[Link, None]):
             buffer.append(f'{str(suggestion)}\n')
 
         if link:
-            buffer.append(f'{Style.DIM}{theme.PRIMARY_TEXT}Read more about {link.context}')
+            buffer.append(f'{theme.DESCRIPTION}Read more about {link.context}')
             buffer.append(f'{Style.BRIGHT}{Fore.CYAN}{link.url}{Style.RESET_ALL}\n')
 
         print('\n'.join(buffer))
