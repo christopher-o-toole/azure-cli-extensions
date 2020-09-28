@@ -8,11 +8,14 @@ from msrest.serialization import Serializer, ValidationError
 _validate = Serializer.validate
 
 
-def validate_hook(_, data, name, **kwargs):
+def validate_hook(*args, **kwargs):
+    if isinstance(args[0], Serializer):
+        args = args[1:]
+
     try:
-        return _validate(data, name, **kwargs)
+        return _validate(*args, **kwargs)
     except ValidationError as ex:
-        setattr(ex, '_invalid_value', data)
+        setattr(ex, '_invalid_value', args[0])
         raise
 
 
