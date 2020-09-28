@@ -69,7 +69,7 @@ class Suggestion(CliCommand):
         if not applied_command_highlighting:
             self.command = f'{Style.BRIGHT}{theme.COMMAND}az {self.command}{Style.RESET_ALL}'
 
-        self.description = f'{theme.PRIMARY_TEXT}{self.description}{Style.RESET_ALL}' if self.description else None
+        self.description = f'{theme.DESCRIPTION}{self.description}{Style.RESET_ALL}' if self.description else None
         self.parameters = [f'{theme.PARAMETER}{param}{Style.RESET_ALL}' for param in self.parameters]
         self.arguments = [f'{theme.ARGUMENT}{arg}{Style.RESET_ALL}' for arg in self.arguments]
 
