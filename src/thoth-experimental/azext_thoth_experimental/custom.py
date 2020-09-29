@@ -42,7 +42,7 @@ def main(*_, **__):
 
     if status and (str(status).lower() in ('userfault', 'failure') or last_cli_error.error_type):
         with disable_colorama_and_enable_virtual_terminal_support_if_available():
-            help_table: Union[HelpTable, None] = HelpTable.load()
+            help_table: Union[HelpTable, None] = None
 
             try:
                 help_table = HelpTable.load()

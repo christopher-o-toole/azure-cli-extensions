@@ -31,12 +31,19 @@ class CliCommand():
 
         if not self.command_only:
             for (param, arg) in zip(self.parameters, self.arguments):
+                optional = '\a' in arg
+                arg = arg.replace('\a', '') 
+                from azext_thoth_experimental._personalization import remove_ansi_color_codes
+                arg = arg if remove_ansi_color_codes(arg) else ''
+                param = param if remove_ansi_color_codes(param) else ''
                 if not buffer:
                     buffer.append('')
                 if arg:
                     buffer.append(' '.join((param, arg)))
                 else:
                     buffer.append(param)
+                if optional and buffer[-1]:
+                    buffer[-1] = f'[{buffer[-1]}]'
 
         return f"{self.command}{' '.join(buffer)}"
 

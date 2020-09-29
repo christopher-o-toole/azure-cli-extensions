@@ -55,7 +55,29 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
         ranks = []
         update_suggestion: bool = False
 
+        if (param_tbl := help_table.get_parameter_table(suggested_command)):
+            is_parameter_required = set([*[alias for info in param_tbl.values() for alias in info.setdefault('name', []) if info.get('required')]])
+            suggested_parameter_set = set(suggested_parameters)
+            user_specified_parameter_set = set(parser.normalized_parameters)
+            user_didnt_specify_parameter_set = suggested_parameter_set - user_specified_parameter_set
+            suggested_required_parameter_set = suggested_parameter_set & is_parameter_required
+            suggested_optional_parameter_set = suggested_parameter_set - suggested_required_parameter_set
+
+            for param_idx, param in enumerate(suggested_parameters):
+                if param in suggested_optional_parameter_set:
+                    suggested_placeholders[param_idx] = '\a' + suggested_placeholders[param_idx]
+                    update_suggestion = True
+
+            min_optional_parameter_rank = parameter_rank[min(suggested_optional_parameter_set, key=lambda key: parameter_rank[key])] if suggested_optional_parameter_set else 1
+            min_optional_parameter_rank = 1 if math.isinf(min_optional_parameter_rank) else min_optional_parameter_rank
+            max_required_parameter_rank = parameter_rank[max(suggested_required_parameter_set, key=lambda key: parameter_rank[key])] if suggested_required_parameter_set else 0
+            max_required_parameter_rank = 0 if math.isinf(max_required_parameter_rank) else max_required_parameter_rank
+
+            for param in user_didnt_specify_parameter_set & is_parameter_required:
+                parameter_rank[param] = min(min_optional_parameter_rank - 1, max_required_parameter_rank + 1)
+                update_suggestion = True
         if help_table and (param_tbl := help_table.get_parameter_table(suggested_command)) and (fail_cmd_param_tbl := help_table.get_parameter_table(parser.command)):
+
             valid_parameter_set = set([*list(param_tbl.keys()), *[alias for info in param_tbl.values() for alias in info.setdefault('name', [])]])
             fail_cmd_param_tbl = {alias: info for name, info in fail_cmd_param_tbl.items() for alias in info.setdefault('name', [])}
             param_tbl = {alias: info for name, info in param_tbl.items() for alias in info.setdefault('name', [])}
@@ -114,5 +136,12 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
                 'parameters': [p for _, p in sorted(zip(ranks, suggested_parameters), key=lambda pair: pair[0])],
                 'placeholders': [p for _, p in sorted(zip(ranks, suggested_placeholders), key=lambda pair: pair[0])]
             }, help_table)
+
+    from azext_thoth_experimental.hook._cli_error_handling import last_cli_error, ErrorTypeInfo
+    error_type = last_cli_error.error_type
+    if isinstance(error_type, ErrorTypeInfo):
+        error_type = error_type.value
+    if error_type in ('Character not allowed',):
+        suggestions = [suggestion for suggestion in suggestions if remove_ansi_color_codes(suggestion.command).startswith('az ' + parser.command)]
 
     return suggestions
