@@ -92,6 +92,7 @@ class AzCliErrorHook(azclierror.AzCLIError, metaclass=Singleton):
             with CommandLoggerContext(logger):
                 message = self.ERROR_MSG_FMT_STR.format(error_type=self.error_type.value, msg=self.error_msg)
                 print(message, file=sys.stderr)
+                print(f'{Style.BRIGHT}{theme.DESCRIPTION}Run {Style.BRIGHT}{theme.COMMAND}{self.command}{Style.NORMAL} --help{theme.DESCRIPTION}{Style.BRIGHT} for in-tool help.{Style.RESET_ALL}')
                 # logger.error appears to strip color information from the text. could investigate further later
                 # logger.error(message)
                 if self.raw_exception:
