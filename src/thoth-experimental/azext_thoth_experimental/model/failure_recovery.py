@@ -7,7 +7,7 @@ import json
 import os
 import re
 from pathlib import Path
-from typing import Callable, Dict, List, Pattern, Union
+from typing import Callable, Dict, List, Match, Pattern, Union
 
 import azure.cli.core.telemetry as cli_core_telemetry
 from azure.cli.core.command_recommender import AladdinUserFaultType
@@ -28,7 +28,7 @@ SCRIPT_PATH: Path = Path(os.path.dirname(os.path.realpath(__file__)))
 DEFAULT_MODEL_PATH: Path = SCRIPT_PATH / 'model.json'
 
 
-def _handle_invalid_help_call(match: re.Match, help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
+def _handle_invalid_help_call(match: Match, help_table: Union[HelpTable, None] = None) -> List[Suggestion]:
     command_or_command_group: str = match.group('command_or_command_group')
     if help_table and command_or_command_group in help_table:
         return [
@@ -53,7 +53,8 @@ class RuleBasedFailureRecoveryModel():
         suggestions: List[Suggestion] = []
 
         for rule, handler in self.rules.items():
-            if match := rule.match(parser.command):
+            match = rule.match(parser.command)
+            if match:
                 suggestions = handler(match, help_table)
 
         return suggestions

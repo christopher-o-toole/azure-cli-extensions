@@ -8,7 +8,7 @@
 import re
 import sys
 from enum import Enum
-from typing import Callable, Dict, Pattern, Tuple, Union
+from typing import Callable, Dict, Match, Pattern, Tuple, Union
 
 from azure.cli.core.azclierror import AzCLIError
 
@@ -88,7 +88,7 @@ class AzCliErrorHandlerType(Enum):
         return hash(self.value)
 
 
-ErrorHandlerMapType = Dict[AzCliErrorHandlerType, Callable[[re.Match], Union[str, Tuple[str, SuggestedErrorCorrection], None]]]
+ErrorHandlerMapType = Dict[AzCliErrorHandlerType, Callable[[object], Union[str, Tuple[str, SuggestedErrorCorrection], None]]]
 
 
 class AzCliErrorHandler():
@@ -128,7 +128,7 @@ class AzCliErrorHandler():
         classname = type(self).__name__
         logger.debug('%(classname)s : called on error: %(error)s', {'classname': classname, 'error': cli_error})
 
-        match: Union[re.Match, None] = None
+        match: Union[Match, None] = None
 
         self.error_msg = cli_error.error_msg
         _exc_type, exc_value, _traceback = sys.exc_info()
@@ -137,12 +137,14 @@ class AzCliErrorHandler():
         override = True
 
         for cli_error_handler_type, error_handler in self.error_handlers.items():
-            if match := cli_error_handler_type.pattern.search(self.error_msg):
+            match = cli_error_handler_type.pattern.search(self.error_msg)
+            if match:
                 error_metadata = self._get_error_metadata(cli_error_handler_type)
                 kwargs = {}
                 if cli_error_handler_type == AzCliErrorHandlerType.CommandNotFound and hasattr(cli_error, 'command_group'):
                     kwargs.update({'command_group': getattr(cli_error, 'command_group', None)})
-                if result := error_handler(match, error_metadata, **kwargs):
+                result = error_handler(match, error_metadata, **kwargs)
+                if result:
                     error_msg = self._get_error_msg(result)
                     break
         else:

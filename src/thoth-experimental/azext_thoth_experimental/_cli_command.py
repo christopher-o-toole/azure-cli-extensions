@@ -42,7 +42,7 @@ class CliCommand():
                     buffer.append(' '.join((param, arg)))
                 else:
                     buffer.append(param)
-                if optional and buffer[-1]:
+                if optional and buffer[-1] and len(self.parameters) > 1:
                     buffer[-1] = f'[{buffer[-1]}]'
 
         return f"{self.command}{' '.join(buffer)}"

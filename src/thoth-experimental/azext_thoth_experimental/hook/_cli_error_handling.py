@@ -82,7 +82,8 @@ class AzCliErrorHook(azclierror.AzCLIError, metaclass=Singleton):
         error_msg = last_cli_error.original_error_message
         if '\x1b' in error_msg:
             error_msg = remove_ansi_color_codes(error_msg)
-        if match := re.match(UNKNOWN_SUBCOMMAND_PATTERN, error_msg):
+        match = re.match(UNKNOWN_SUBCOMMAND_PATTERN, error_msg)
+        if match:
             unknown_subcommand = match.group('subcommand').strip().lower()
         return unknown_subcommand
 
@@ -92,8 +93,8 @@ class AzCliErrorHook(azclierror.AzCLIError, metaclass=Singleton):
             with CommandLoggerContext(logger):
                 message = self.ERROR_MSG_FMT_STR.format(error_type=self.error_type.value, msg=self.error_msg)
                 print(message, file=sys.stderr)
-                if self.command:
-                    print(f'{Style.BRIGHT}{theme.DESCRIPTION}Run {Style.BRIGHT}{theme.COMMAND}{self.command}{Style.NORMAL} --help{theme.DESCRIPTION}{Style.BRIGHT} for in-tool help.{Style.RESET_ALL}')
+                if self.command and 'help' not in self.original_error_message and not self.command.endswith('help'):
+                    print(f'{Style.RESET_ALL}Run {Style.BRIGHT}{theme.COMMAND}{self.command}{Style.NORMAL} --help{Style.RESET_ALL} for in-tool help.{Style.RESET_ALL}')
                 # logger.error appears to strip color information from the text. could investigate further later
                 # logger.error(message)
                 if self.raw_exception:

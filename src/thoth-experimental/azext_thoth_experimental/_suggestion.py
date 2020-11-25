@@ -35,7 +35,6 @@ class Suggestion(CliCommand):
         super().__init__(command, parameters, placeholders)
         self.description = description
         self.help_table = help_table
-
         if not description and self.help_table:
             self.description = help_table.get_description(command)
 

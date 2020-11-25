@@ -55,7 +55,13 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
         ranks = []
         update_suggestion: bool = False
 
-        if (param_tbl := help_table.get_parameter_table(suggested_command)):
+        param_tbl = None
+        fail_cmd_param_tbl = None
+
+        if help_table:
+            param_tbl = help_table.get_parameter_table(suggested_command)
+            fail_cmd_param_tbl = help_table.get_parameter_table(parser.command)
+        if (param_tbl):
             is_parameter_required = set([*[alias for info in param_tbl.values() for alias in info.setdefault('name', []) if info.get('required')]])
             suggested_parameter_set = set(suggested_parameters)
             user_specified_parameter_set = set(parser.normalized_parameters)
@@ -76,8 +82,7 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
             for param in user_didnt_specify_parameter_set & is_parameter_required:
                 parameter_rank[param] = min(min_optional_parameter_rank - 1, max_required_parameter_rank + 1)
                 update_suggestion = True
-        if help_table and (param_tbl := help_table.get_parameter_table(suggested_command)) and (fail_cmd_param_tbl := help_table.get_parameter_table(parser.command)):
-
+        if param_tbl and fail_cmd_param_tbl:
             valid_parameter_set = set([*list(param_tbl.keys()), *[alias for info in param_tbl.values() for alias in info.setdefault('name', [])]])
             fail_cmd_param_tbl = {alias: info for name, info in fail_cmd_param_tbl.items() for alias in info.setdefault('name', [])}
             param_tbl = {alias: info for name, info in param_tbl.items() for alias in info.setdefault('name', [])}
@@ -120,8 +125,9 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
 
         for j, parameter in enumerate(suggested_parameters):
             is_parameter_suggested[parameter] = True
-            if (entry := cmd_parse_tbl.get(parameter)) and (argument := entry.autocorrected_argument or entry.argument) \
-               and (not mentioned_in_error_message(parameter) or entry.autocorrected_argument != entry.argument):
+            entry = cmd_parse_tbl.get(parameter)
+            argument = entry and (entry.autocorrected_argument or entry.argument)
+            if argument and (not mentioned_in_error_message(parameter) or entry.autocorrected_argument != entry.argument):
                 suggested_placeholders[j] = argument
                 suggested_parameters[j] = entry.parameter
                 update_suggestion = True
@@ -134,7 +140,8 @@ def get_personalized_suggestions(suggestions: List[Suggestion], parser: CommandP
             suggestions[i] = Suggestion.parse({
                 'command': suggested_command,
                 'parameters': [p for _, p in sorted(zip(ranks, suggested_parameters), key=lambda pair: pair[0])],
-                'placeholders': [p for _, p in sorted(zip(ranks, suggested_placeholders), key=lambda pair: pair[0])]
+                'placeholders': [p for _, p in sorted(zip(ranks, suggested_placeholders), key=lambda pair: pair[0])],
+                'description': suggestion.description
             }, help_table)
 
     from azext_thoth_experimental.hook._cli_error_handling import last_cli_error, ErrorTypeInfo

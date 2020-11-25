@@ -1,5 +1,5 @@
 import re
-from typing import Dict, List, Pattern
+from typing import Dict, List, Match, Pattern
 
 from azext_thoth_experimental._cli_command import CliCommand
 from azext_thoth_experimental._command import Command
@@ -65,7 +65,7 @@ class CommandParser():
         self.command_group: str = self._get_command_group(args)
 
         _input: str = ' '.join(args)
-        command: re.Match = self.COMMAND_PATTERN.match(_input)
+        command: Match = self.COMMAND_PATTERN.match(_input)
 
         self.command = command.group().strip().lower() if command else None
         self.is_valid_command = self.command in self.cmd_tbl

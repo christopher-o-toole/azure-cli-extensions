@@ -4,19 +4,19 @@
 # --------------------------------------------------------------------------------------------
 
 import re
-from typing import Pattern, Tuple, Set, Union
+from typing import Match, Pattern, Set, Tuple, Union
 
 from azext_thoth_experimental.hook._suggested_error_correction import SuggestedErrorCorrection, CorrectionType
 
 ARGUMENT_PATTERN: Pattern[str] = re.compile(r'(?<!/)--(?P<argument>[a-z][A-Za-z-]*)')
 
 
-def handle_resource_not_found_error(match: re.Match, _error_msg: str) -> str:
+def handle_resource_not_found_error(match: Match, _error_msg: str) -> str:
     invalid_resource_name = match.group('invalid_resource_name')
     return f'{invalid_resource_name} does not exist'
 
 
-def handle_character_not_allowed_error(match: re.Match, ex: Exception) -> Tuple[str, SuggestedErrorCorrection]:
+def handle_character_not_allowed_error(match: Match, ex: Exception) -> Tuple[str, SuggestedErrorCorrection]:
     regex: str = match.group('regex')
     parameter: str = match.group('parameter')
     # fix the invalid regular expression output by the CLI
@@ -50,10 +50,11 @@ def handle_character_not_allowed_error(match: re.Match, ex: Exception) -> Tuple[
     return msg, suggested_fix
 
 
-def handle_argument_required_error(_match: re.Match, error_msg: str):
+def handle_argument_required_error(_match: Match, error_msg: str):
     buffer = []
 
-    if arguments := re.findall(ARGUMENT_PATTERN, error_msg):
+    arguments = re.findall(ARGUMENT_PATTERN, error_msg)
+    if arguments:
         for i, arg in enumerate(arguments):
             arg = arg
             if i == 0:
@@ -65,15 +66,16 @@ def handle_argument_required_error(_match: re.Match, error_msg: str):
     return msg
 
 
-def handle_value_required_error(_match: re.Match, error_msg: str):
+def handle_value_required_error(_match: Match, error_msg: str):
     msg = None
 
-    if argument := ARGUMENT_PATTERN.search(error_msg):
+    argument = ARGUMENT_PATTERN.search(error_msg)
+    if argument:
         msg = argument.group()
 
     return msg
 
 
-def handle_command_not_found_error(match: re.Match, _error_msg: str, command_group: Union[str, None] = None):
+def handle_command_not_found_error(match: Match, _error_msg: str, command_group: Union[str, None] = None):
     subcommand: str = match.group('subcommand')
     return f'{command_group}{" " if command_group else ""}{subcommand}'

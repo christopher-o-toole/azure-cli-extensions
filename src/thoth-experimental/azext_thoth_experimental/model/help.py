@@ -26,7 +26,9 @@ class HelpTable():
         children = root.get('items') or root.get('children') or []
 
         for node in children:
-            if (display_name := node.get('displayName')) and display_name.startswith('az ') and (href := node.get('href')):
+            display_name = node.get('displayName')
+            href = node.get('href')
+            if display_name and display_name.startswith('az ') and href:
                 if display_name not in tbl or '/ext/' in tbl[display_name]:
                     tbl[display_name] = href
             if hasattr(node, 'items') or hasattr(node, 'children'):
