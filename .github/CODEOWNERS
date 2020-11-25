@@ -110,6 +110,8 @@
 
 /src/databox/ @jsntcy
 
+/src/datadog/ @limingu
+
 /src/hpc-cache/ @zhoxing-ms
 
 /src/timeseriesinsights/ @jiasli
@@ -152,6 +154,8 @@
 
 /src/scheduled-query/ @MyronFanQiu @jsntcy
 
-/src/stack-hci/ @zhoxing-ms
+/src/cli-translator/ @arrownj
 
 /src/azext_thoth-experimental/ @christopher-o-toole
+
+/src/stack-hci/ @zhoxing-ms
